@@ -1,4 +1,8 @@
-# Go-on-a-Sphere
+
+
+![spher](https://github.com/Holz231/Go-on-a-Sphere/assets/74673348/5dee244e-3b67-4f6d-b8af-b46a34b2a50d)
+ 
+
 Go on a Sphere
 
 
@@ -23,4 +27,4 @@ left click = move the sphere
 mouse scroll = zoom in and out
 
 
-![spher](https://github.com/Holz231/Go-on-a-Sphere/assets/74673348/5dee244e-3b67-4f6d-b8af-b46a34b2a50d)
+
