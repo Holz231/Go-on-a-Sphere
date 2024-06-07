@@ -7,8 +7,11 @@ Go on a Sphere
 you have to choose the face you want to place a stone on
 
 1 = face 1
+
 2 = face 2
+
 3 = face 3
+
 and so on
 
 8 = change from placing and removing stones
