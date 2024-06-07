@@ -6,6 +6,7 @@
 Go on a Sphere
 
 in the code you can change the number of squares on the sphere
+
 |--> search for this in the code: n = 10  # Number of divisions per face
 
 0 = change from black to red stones
