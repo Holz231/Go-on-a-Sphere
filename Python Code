@@ -1,0 +1,140 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D, proj3d
+
+def tangent_adjustment(x, y, z):
+    """
+    Apply tangent adjustment to map the cube faces to the sphere with equal angular spacing.
+    """
+    x_adj = np.tan((np.pi / 4) * x)
+    y_adj = np.tan((np.pi / 4) * y)
+    z_adj = np.tan((np.pi / 4) * z)
+
+    norm = np.sqrt(x_adj**2 + y_adj**2 + z_adj**2)
+    return x_adj / norm, y_adj / norm, z_adj / norm
+
+# Generate the grid for a single face of a cube
+n = 10  # Number of divisions per face
+lin = np.linspace(-1, 1, n)
+x, y = np.meshgrid(lin, lin)
+z = np.ones_like(x)
+
+# Create a figure and 3D axes
+fig = plt.figure(figsize=(8, 8))
+ax = fig.add_subplot(111, projection='3d')
+
+# Plot each face of the cube mapped to the sphere
+faces = [
+    (x, y, z),    # Front face
+    (x, y, -z),   # Back face
+    (x, z, y),    # Top face
+    (x, -z, y),   # Bottom face
+    (z, x, y),    # Right face
+    (-z, x, y)    # Left face
+]
+
+face_labels = ['3', '4', '1', '2', '5', '6']
+colors = ['r', 'b', 'g', 'y', 'm', 'c']
+
+# Store the adjusted points for all faces
+all_points = []
+
+for (x, y, z), color, label in zip(faces, colors, face_labels):
+    xs, ys, zs = tangent_adjustment(x, y, z)
+    ax.plot_wireframe(xs, ys, zs, color=color, linewidth=0.5)
+    all_points.append((xs, ys, zs))
+
+# Annotate sections for better understanding
+ax.text(0, 0, 1.5, '1', color='k', fontsize=12, ha='center')
+ax.text(0, 0, -1.5, '2', color='k', fontsize=12, ha='center')
+ax.text(1.5, 0, 0, '5', color='k', fontsize=12, ha='center')
+ax.text(-1.5, 0, 0, '6', color='k', fontsize=12, ha='center')
+ax.text(0, 1.5, 0, '3', color='k', fontsize=12, ha='center')
+ax.text(0, -1.5, 0, '4', color='k', fontsize=12, ha='center')
+
+# Set the aspect ratio
+ax.set_box_aspect([1, 1, 1])
+
+# Hide axes
+ax.axis('off')
+
+selected_face = None
+mode = 'add'  # Initial mode is set to 'add'
+stone_color = 'k'  # Initial stone color is black
+stones = []
+
+def on_click(event):
+    global selected_face, stones
+    if event.inaxes == ax:
+        if event.button == 1:  # Left click
+            # Rotate the sphere (equivalent to moving the view angle)
+            ax.view_init(elev=ax.elev + 10, azim=ax.azim + 10)
+            plt.draw()
+        elif event.button == 3 and selected_face is not None:  # Right click and a face is selected
+            # Get the click position in pixels
+            xdata, ydata = event.x, event.y
+
+            # Find the closest grid intersection on the selected face
+            min_dist = float('inf')
+            closest_point = None
+
+            xs, ys, zs = all_points[selected_face]
+            for xi, yi, zi in zip(xs.flatten(), ys.flatten(), zs.flatten()):
+                # Project 3D points to 2D screen coordinates
+                x2d, y2d, _ = proj3d.proj_transform(xi, yi, zi, ax.get_proj())
+                x2d, y2d = ax.transData.transform((x2d, y2d))
+                dist = np.sqrt((x2d - xdata)**2 + (y2d - ydata)**2)
+                if dist < min_dist:
+                    min_dist = dist
+                    closest_point = (xi, yi, zi)
+
+            if closest_point:
+                if mode == 'add':
+                    # Add a stone at the closest point
+                    stone = ax.scatter(*closest_point, color=stone_color, s=50)  # Adjust the size and color as needed
+                    stones.append((closest_point, stone))
+                elif mode == 'remove':
+                    # Remove a stone at the closest point if it exists
+                    for (point, stone) in stones:
+                        if np.allclose(point, closest_point, atol=1e-2):
+                            stone.remove()
+                            stones.remove((point, stone))
+                            break
+                plt.draw()
+
+def on_scroll(event):
+    if event.inaxes == ax:
+        scale_factor = 1.1 if event.button == 'up' else 0.9
+        ax.set_xlim3d([scale_factor * x for x in ax.get_xlim3d()])
+        ax.set_ylim3d([scale_factor * y for y in ax.get_ylim3d()])
+        ax.set_zlim3d([scale_factor * z for z in ax.get_zlim3d()])
+        plt.draw()
+
+def on_key(event):
+    global selected_face, mode, stone_color
+    face_keys = {
+        '1': 0,  # Front face
+        '2': 1,  # Back face
+        '3': 2,  # Top face
+        '4': 3,  # Bottom face
+        '5': 4,  # Right face
+        '6': 5   # Left face
+    }
+    if event.key in face_keys:
+        selected_face = face_keys[event.key]
+        print(f"Selected face: {face_labels[selected_face]}")
+    elif event.key == '0':
+        # Switch between 'add' and 'remove' mode
+        mode = 'remove' if mode == 'add' else 'add'
+        print(f"Mode switched to: {mode}")
+    elif event.key == '8':
+        # Switch between black and red stone colors
+        stone_color = 'r' if stone_color == 'k' else 'k'
+        print(f"Stone color switched to: {'red' if stone_color == 'r' else 'black'}")
+
+# Connect the click, scroll, and key press events to the handlers
+fig.canvas.mpl_connect('button_press_event', on_click)
+fig.canvas.mpl_connect('scroll_event', on_scroll)
+fig.canvas.mpl_connect('key_press_event', on_key)
+
+plt.show()
